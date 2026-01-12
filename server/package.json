@@ -1,0 +1,41 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "postgres",
+    "react",
+    "express",
+    "next"
+  ],
+  "license": "ISC",
+  "author": "krishnendu",
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --ignore dist --exec \"node --loader ts-node/esm src/server.ts\"",
+    "build": "tsup src/server.ts --out-dir dist --clean",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.16.3",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/helmet": "^0.0.48",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.0.6",
+    "@types/pg": "^8.16.0",
+    "nodemon": "^3.1.11",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  }
+}
