@@ -10,6 +10,8 @@ export const createProductSchema = z.object({
             return rows.length === 0;
         }, { message: "Product with this name already exists" }),
 
+    product_image: z.string({ message: "Product image is required" }).min(5, { message: 'Product image must be at least 5 characters long' }),
+
     description: z
         .string({ message: "Description is required" })
         .min(10, { message: "Description must be at least 5 characters long" }),

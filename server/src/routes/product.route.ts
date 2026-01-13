@@ -6,8 +6,7 @@ import {
     getProducts,
     updateProduct
 } from "../controllers/product.controllers.js";
-import { zodValidate } from "../middlewares/zodValidate.js";
-import { createProductSchema } from "../schema/product.js";
+import { upload } from "../middlewares/upload.js";
 
 const router = express.Router();
 
@@ -15,10 +14,10 @@ const router = express.Router();
 router.get("/", getProducts);
 
 /* CREATE */
-router.post("/", zodValidate(createProductSchema), createProduct);
+router.post("/", upload.single("product_image"), createProduct);
 
 /* UPDATE */
-router.put("/:id", zodValidate(createProductSchema), updateProduct);
+router.put("/:id", upload.single("product_image"), updateProduct);
 
 /* DELETE */
 router.delete("/:id", deleteProduct);
