@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapAuthError } from "@/lib/authError";
 
 const ForgetPasswordForm = () => {
     const router = useRouter();
@@ -24,7 +25,7 @@ const ForgetPasswordForm = () => {
             });
             router.replace(`/auth/reset-password?email=${encodeURIComponent(email)}`);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to reset password");
+            setError(mapAuthError(err))
         } finally {
             setLoading(false);
         }

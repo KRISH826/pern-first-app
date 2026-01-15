@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapAuthError } from "@/lib/authError";
 
 export default function SignInForm() {
     const router = useRouter();
@@ -25,11 +26,7 @@ export default function SignInForm() {
             await signIn({ username: email, password });
             router.push("/");
         } catch (err) {
-            if (err instanceof Error && err.message) {
-                setError(err.message);
-            } else {
-                setError("Failed to sign in");
-            }
+            setError(mapAuthError(err))
         } finally {
             setLoading(false);
         }

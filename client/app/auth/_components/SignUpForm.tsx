@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapAuthError } from "@/lib/authError";
 
 export default function SignUpForm() {
     const router = useRouter();
@@ -49,9 +50,7 @@ export default function SignUpForm() {
                 router.replace("/auth/sign-in");
             }
         } catch (err: unknown) {
-            setError(
-                err instanceof Error ? err.message : "Unable to create account"
-            );
+            setError(mapAuthError(err))
         } finally {
             setLoading(false);
         }

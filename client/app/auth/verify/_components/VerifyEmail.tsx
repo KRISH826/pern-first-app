@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapAuthError } from "@/lib/authError";
+
 
 export default function VerifyEmailPage() {
     const router = useRouter();
@@ -29,7 +31,7 @@ export default function VerifyEmailPage() {
 
             router.push("/auth/sign-in");
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Invalid verification code");
+            setError(mapAuthError(err))
         } finally {
             setLoading(false);
         }

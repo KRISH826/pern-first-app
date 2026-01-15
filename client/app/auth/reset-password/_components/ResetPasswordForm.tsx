@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { mapAuthError } from "@/lib/authError";
 
 const ResetPasswordForm = () => {
     const [code, setCode] = useState("");
@@ -28,14 +29,14 @@ const ResetPasswordForm = () => {
             });
             router.replace("/auth/sign-in");
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Unable to reset password");
+            setError(mapAuthError(err))
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-100 via-purple-50 to-pink-100 px-4">
             <Card className="w-full max-w-sm">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Reset password</CardTitle>
