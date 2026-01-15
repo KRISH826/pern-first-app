@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { mapAuthError } from "@/lib/authError";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCreateManagerMutation, useCreateTenantMutation } from "@/lib/apiSlice";
 
 export default function SignUpForm() {
     const router = useRouter();
-
+    const [createTenant] = useCreateTenantMutation();
+    const [createManager] = useCreateManagerMutation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -21,6 +24,7 @@ export default function SignUpForm() {
 
         const form = new FormData(e.currentTarget);
         const name = form.get("name") as string;
+        const role = form.get("role") as "tenant" | "manager";
         const email = form.get("email") as string;
         const password = form.get("password") as string;
         const confirm = form.get("confirm") as string;
@@ -39,9 +43,22 @@ export default function SignUpForm() {
                     userAttributes: {
                         name,
                         email,
+                        "custom:role": role,
                     },
                 },
             });
+
+            const userData = {
+                cognito_sub: result.userId,
+                name,
+                email,
+            };
+
+            if (role === "tenant") {
+                await createTenant(userData).unwrap();
+            } else {
+                await createManager(userData).unwrap();
+            }
 
             // 🔑 handle both Cognito configurations
             if (result.nextStep?.signUpStep === "CONFIRM_SIGN_UP") {
@@ -70,7 +87,7 @@ export default function SignUpForm() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <label htmlFor="name" className="text-sm font-medium">
                             Full name
                         </label>
@@ -82,7 +99,7 @@ export default function SignUpForm() {
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <label htmlFor="email" className="text-sm font-medium">
                             Email address
                         </label>
@@ -95,7 +112,7 @@ export default function SignUpForm() {
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <label htmlFor="password" className="text-sm font-medium">
                             Password
                         </label>
@@ -108,7 +125,7 @@ export default function SignUpForm() {
                         />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <label htmlFor="confirm" className="text-sm font-medium">
                             Confirm password
                         </label>
@@ -119,6 +136,23 @@ export default function SignUpForm() {
                             placeholder="••••••••"
                             required
                         />
+                    </div>
+                    <div className="space-y-3">
+                        <label htmlFor="role" className="text-sm font-medium">
+                            Role
+                        </label>
+                        <Select
+                            name="role"
+                            required
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                            <SelectContent position="popper">
+                                <SelectItem value="tenant">Tenant</SelectItem>
+                                <SelectItem value="manager">Manager</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <Button type="submit" className="w-full" disabled={loading}>

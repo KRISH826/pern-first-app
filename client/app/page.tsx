@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 type Profile = {
   name: string;
   email: string;
+  role: string;
 }
 
 const Home = () => {
@@ -19,7 +20,8 @@ const Home = () => {
         const attributes = await fetchUserAttributes();
         setUser({
           name: attributes.name!,
-          email: attributes.email!
+          email: attributes.email!,
+          role: attributes['custom:role']!
         })
       } catch (error) {
         console.log(error);
@@ -38,6 +40,7 @@ const Home = () => {
       <Button onClick={handleLogOut}>Log Out</Button>
       <p>Name: {user?.name}</p>
       <p>Email: {user?.email}</p>
+      <p>Role: {user?.role}</p>
     </div>
   )
 }
