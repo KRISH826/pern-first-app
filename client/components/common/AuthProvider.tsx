@@ -5,7 +5,7 @@ import { logout, setCredentials } from '@/store/user/userSlice';
 import { fetchAuthSession, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import React, { useEffect } from 'react'
 
-const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const dispatch = useAppDispatch();
     useEffect(() => {
         const syncAuth = async () => {
@@ -31,4 +31,4 @@ const AuthInitializer = ({ children }: { children: React.ReactNode }) => {
     )
 }
 
-export default AuthInitializer
+export default AuthProvider
