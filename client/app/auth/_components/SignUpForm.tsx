@@ -8,12 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { mapAuthError } from "@/lib/authError";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateManagerMutation, useCreateTenantMutation } from "@/lib/apiSlice";
 
 export default function SignUpForm() {
     const router = useRouter();
-    const [createTenant] = useCreateTenantMutation();
-    const [createManager] = useCreateManagerMutation();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -47,22 +44,16 @@ export default function SignUpForm() {
                     },
                 },
             });
-
-            const userData = {
-                cognito_sub: result.userId,
-                name,
-                email,
-            };
-
-            if (role === "tenant") {
-                await createTenant(userData).unwrap();
-            } else {
-                await createManager(userData).unwrap();
-            }
-
             // 🔑 handle both Cognito configurations
             if (result.nextStep?.signUpStep === "CONFIRM_SIGN_UP") {
-                router.replace(`/auth/verify?email=${encodeURIComponent(email)}`);
+                const params = new URLSearchParams();
+                params.set("email", email);
+                params.set("name", name);
+                params.set("role", role);
+                if (result.userId) {
+                    params.set("userId", result.userId);
+                }
+                router.replace(`/auth/verify?${params.toString()}`);
             } else {
                 router.replace("/auth/sign-in");
             }

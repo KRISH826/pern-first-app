@@ -6,14 +6,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { mapAuthError } from "@/lib/authError";
-
+import { useSignupManagerMutation, useSignupTenantMutation } from "@/lib/publicApiSlice";
 
 export default function VerifyEmailPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email") || "";
-
+    const name = searchParams.get("name") || "";
+    const role = searchParams.get("role") || "";
+    const userId = searchParams.get("userId") || "";
+    const [signupTenant] = useSignupTenantMutation();
+    const [signupManager] = useSignupManagerMutation();
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -29,9 +32,21 @@ export default function VerifyEmailPage() {
                 confirmationCode: code,
             });
 
+            const userData = {
+                cognito_sub: userId,
+                name,
+                email,
+            };
+
+            if (role === "tenant") {
+                await signupTenant(userData).unwrap();
+            } else {
+                await signupManager(userData).unwrap();
+            }
+
             router.push("/auth/sign-in");
         } catch (err: unknown) {
-            setError(mapAuthError(err))
+            setError(err instanceof Error ? err.message : "Invalid verification code");
         } finally {
             setLoading(false);
         }

@@ -1,47 +1,62 @@
 "use client"
-import React, { useState, useEffect } from 'react'
-import { signOut, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth'
+import React from 'react'
+import { signOut } from 'aws-amplify/auth'
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AuthGuard from '@/components/common/AuthGuard';
+import { useAppDispatch, useAppSelector } from '@/hooks/useRedux';
+import { logout } from '@/store/user/userSlice';
 
-type Profile = {
-  name: string;
-  email: string;
-  role: string;
+const TenantDashboard = () => {
+  const { user } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const handleLogOut = async () => {
+    await signOut();
+    dispatch(logout());
+    router.replace('/auth/sign-in');
+  }
+
+  return (
+    <div className='min-h-screen flex flex-col items-center justify-center gap-6 p-4'>
+      <h1 className='text-4xl font-bold bg-linear-to-r from-primary to-purple-600 bg-clip-text text-transparent'>
+        Tenant Dashboard
+      </h1>
+
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl">Your Profile</CardTitle>
+          <CardDescription>You are logged in as a Tenant</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Name</p>
+            <p className="font-medium">{user?.name}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Email</p>
+            <p className="font-medium">{user?.email}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Role</p>
+            <p className="font-medium capitalize">{user?.role}</p>
+          </div>
+          <Button onClick={handleLogOut} variant="destructive" className="w-full mt-4">
+            Log Out
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
 
 const Home = () => {
-  const [user, setUser] = useState<Profile | null>(null);
-  const router = useRouter()
-  useEffect(() => {
-    async function fetchProfile() {
-      try {
-        await getCurrentUser();
-        const attributes = await fetchUserAttributes();
-        setUser({
-          name: attributes.name!,
-          email: attributes.email!,
-          role: attributes['custom:role']!
-        })
-      } catch (error) {
-        console.log(error);
-        router.replace('/auth/sign-in')
-      }
-    }
-    fetchProfile();
-  }, [router])
-  const handleLogOut = async () => {
-    await signOut();
-    router.replace('/auth/sign-in')
-  }
   return (
-    <div className='min-h-screen flex flex-col items-center justify-center gap-6'>
-      <h1 className='text-3xl font-bold'>Welcome to our platform</h1>
-      <Button onClick={handleLogOut}>Log Out</Button>
-      <p>Name: {user?.name}</p>
-      <p>Email: {user?.email}</p>
-      <p>Role: {user?.role}</p>
-    </div>
+    <AuthGuard allowedRoles={["tenant"]}>
+      <TenantDashboard />
+    </AuthGuard>
   )
 }
 

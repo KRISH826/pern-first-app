@@ -6,10 +6,10 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // ✅ FIXED: Added / at the start of each route
-router.get("/tenants/:cognito_sub", authMiddleware(["tenant"]), getTenant);
-router.post("/tenants", authMiddleware(["tenant"]), createTenant);
+router.get("/tenants/:cognito_sub", authMiddleware(['tenant']), getTenant);
+router.post("/tenants", createTenant);
 
-router.get("/managers/:cognito_sub", authMiddleware(["manager"]), getManager);
-router.post("/managers", authMiddleware(["manager"]), createManager);
+router.get("/managers/:cognito_sub", authMiddleware(['manager']), getManager);
+router.post("/managers", createManager);
 
 export default router;
