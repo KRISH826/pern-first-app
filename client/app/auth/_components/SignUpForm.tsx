@@ -48,11 +48,8 @@ export default function SignUpForm() {
             if (result.nextStep?.signUpStep === "CONFIRM_SIGN_UP") {
                 const params = new URLSearchParams();
                 params.set("email", email);
-                params.set("name", name);
+                params.set("password", password);
                 params.set("role", role);
-                if (result.userId) {
-                    params.set("userId", result.userId);
-                }
                 router.replace(`/auth/verify?${params.toString()}`);
             } else {
                 router.replace("/auth/sign-in");

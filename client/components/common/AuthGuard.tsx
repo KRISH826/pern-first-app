@@ -1,76 +1,66 @@
-"use client"
+"use client";
 
-import { useAppSelector } from '@/hooks/useRedux'
-import { usePathname, useRouter } from 'next/navigation';
-import React, { useEffect } from 'react'
+import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useAppSelector } from "@/hooks/useRedux";
 
-type Props = {
-    children: React.ReactNode,
-    allowedRoles?: ("tenant" | "manager")[],
-    mode?: "protected" | "guest" // Default is "protected"
+type Role = "tenant" | "manager";
+
+interface AuthGuardProps {
+    children: React.ReactNode;
+    allowedRoles?: Role[];
+    mode?: "protected" | "guest";
 }
 
-const AuthGuard = ({ children, allowedRoles, mode = "protected" }: Props) => {
-    const { isAuthenticated, user, isInitialized } = useAppSelector(state => state.auth);
+const AuthGuard = ({
+    children,
+    allowedRoles,
+    mode = "protected",
+}: AuthGuardProps) => {
+    const { isAuthenticated, user, isInitialized } = useAppSelector(
+        (state) => state.auth
+    );
+
+    const router = useRouter();
     const pathname = usePathname();
-    const router = useRouter()
 
     useEffect(() => {
         if (!isInitialized) return;
 
+        // 🔐 PROTECTED ROUTES
         if (mode === "protected") {
-            // PROTECTED MODE: Redirect to login if NOT authenticated
             if (!isAuthenticated) {
-                // Avoid infinite redirect loop
-                if (!pathname.includes("/auth/sign-in")) {
-                    router.replace(`/auth/sign-in?callbackUrl=${pathname}`);
-                }
+                router.replace(`/auth/sign-in?callbackUrl=${pathname}`);
+                return;
             }
-        } else {
-            // GUEST MODE: Redirect to dashboard if IS authenticated
-            if (isAuthenticated && user) {
-                if (user.role === "manager") {
-                    router.replace("/manager");
-                } else {
-                    router.replace("/");
-                }
+
+            if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+                router.replace("/403");
             }
         }
-    }, [isInitialized, isAuthenticated, pathname, router, mode, user])
 
-    // Loading State
+        // 🌍 GUEST ROUTES (login, signup)
+        if (mode === "guest") {
+            if (isAuthenticated && user) {
+                router.replace(user.role === "manager" ? "/manager" : "/");
+            }
+        }
+    }, [isInitialized, isAuthenticated, user, router, pathname, mode, allowedRoles]);
+
+    // ⏳ Global loading state
     if (!isInitialized) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
         );
     }
 
-    // GUEST MODE RENDERING
-    if (mode === "guest") {
-        // If authenticated, we show nothing (effect will redirect)
-        // If not authenticated, we render children (login form)
-        return !isAuthenticated ? <>{children}</> : null;
-    }
+    // 🚫 Block rendering until redirect finishes
+    if (mode === "protected" && !isAuthenticated) return null;
+    if (mode === "guest" && isAuthenticated) return null;
 
-    // PROTECTED MODE RENDERING
-    if (!isAuthenticated) {
-        return null;
-    }
+    return <>{children}</>;
+};
 
-    if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-red-500">403</h1>
-                    <p className="text-gray-600">You don&apos;t have permission to access this page.</p>
-                </div>
-            </div>
-        );
-    }
-
-    return <>{children}</>
-}
-
-export default AuthGuard
+export default AuthGuard;

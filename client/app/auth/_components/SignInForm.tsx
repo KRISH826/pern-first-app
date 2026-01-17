@@ -1,63 +1,101 @@
 "use client";
 
-import { signIn, fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
+import { signIn, fetchUserAttributes } from "aws-amplify/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { mapAuthError } from "@/lib/authError";
-import { setCredentials } from "@/store/user/userSlice";
+
 import { useAppDispatch } from "@/hooks/useRedux";
+import { setCredentials } from "@/store/user/userSlice";
+import {
+    useLazyGetManagerMeQuery,
+    useLazyGetTenantMeQuery,
+    useCreateTenantMutation,
+    useCreateManagerMutation,
+} from "@/lib/apiSlice";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SignInForm() {
     const router = useRouter();
     const dispatch = useAppDispatch();
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // 🔑 Lazy queries (manual trigger)
+    const [getTenantMe] = useLazyGetTenantMeQuery();
+    const [getManagerMe] = useLazyGetManagerMeQuery();
+
+    // 🆕 Mutations for lazy creation
+    const [createTenant] = useCreateTenantMutation();
+    const [createManager] = useCreateManagerMutation();
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        setError("");
         setLoading(true);
+        setError("");
 
         const form = new FormData(e.currentTarget);
         const email = form.get("email") as string;
         const password = form.get("password") as string;
 
         try {
-            // 1. Sign In Call
-            const { isSignedIn, nextStep } = await signIn({ username: email, password });
+            // 1️⃣ Cognito Sign In (JWT issued here)
+            await signIn({ username: email, password });
 
-            // 2. Check if login is fully complete
-            if (nextStep.signInStep === "DONE") {
+            // 2️⃣ Get role from Cognito
+            const attributes = await fetchUserAttributes();
+            const role = attributes["custom:role"] as "tenant" | "manager";
 
-                // 3. Fetch User Data immediately (Role janne ke liye)
-                const { userId } = await getCurrentUser();
-                const attributes = await fetchUserAttributes();
-                const role = attributes["custom:role"] as "tenant" | "manager";
-
-                // 4. Update Redux Store IMMEDIATELY (Taaki AuthGuard ko wait na karna pade)
-                dispatch(setCredentials({
-                    cognitoSub: userId,
-                    email: attributes.email || "",
-                    name: attributes.name || "",
-                    role: role,
-                }));
-
-                // 5. PERFECT REDIRECT based on Role
-                if (role === "manager") {
-                    router.replace("/manager");
+            // 3️⃣ DB CHECK via RTK Query (PRODUCTION WAY)
+            try {
+                if (role === "tenant") {
+                    await getTenantMe().unwrap();
                 } else {
-                    // Tenant goes to home page
-                    router.replace("/");
+                    await getManagerMe().unwrap();
                 }
-            } else {
-                // Agar MFA ya New Password required hai (Not common in simple setup but safe to handle)
-                setError("Additional verification required (MFA/New Password).");
+            } catch (err: unknown) {
+                // If 404, lazy create user
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((err as any)?.status === 404) {
+                    const userData = {
+                        name: attributes.name || "",
+                        email: attributes.email || "",
+                    };
+
+                    if (role === "tenant") {
+                        await createTenant(userData).unwrap();
+                    } else {
+                        await createManager(userData).unwrap();
+                    }
+                } else {
+                    throw err; // Re-throw other errors
+                }
             }
 
-        } catch (err) {
+            if (role === "tenant") {
+                router.replace("/");
+            } else {
+                router.replace("/manager");
+            }
+
+            // 4️⃣ Update Redux (UI state only)
+            dispatch(
+                setCredentials({
+                    email: attributes.email || "",
+                    name: attributes.name || "",
+                    role,
+                })
+            );
+        } catch (err: unknown) {
+            /**
+             * Possible failures:
+             * - Invalid password
+             * - JWT invalid
+             * - DB entry missing (404 from /me)
+             */
             setError(mapAuthError(err));
         } finally {
             setLoading(false);

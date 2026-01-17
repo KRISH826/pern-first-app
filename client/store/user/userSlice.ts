@@ -1,42 +1,40 @@
-// store/user/userSlice.ts
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+export type UserRole = "tenant" | "manager";
+
+interface User {
+    email: string;
+    name: string;
+    role: UserRole;
+}
+
 interface AuthState {
-    user: {
-        cognitoSub: string;
-        email: string;
-        name: string;
-        role: 'tenant' | 'manager';
-    } | null;
+    user: User | null;
     isAuthenticated: boolean;
-    isLoading: boolean;
-    isInitialized: boolean; // Add this
+    isInitialized: boolean;
 }
 
 const initialState: AuthState = {
     user: null,
     isAuthenticated: false,
-    isLoading: true,
     isInitialized: false,
 };
 
 const authSlice = createSlice({
-    name: 'auth',
+    name: "auth",
     initialState,
     reducers: {
-        setCredentials: (state, action: PayloadAction<AuthState['user']>) => {
+        setCredentials: (state, action: PayloadAction<User>) => {
             state.user = action.payload;
             state.isAuthenticated = true;
-            state.isLoading = false;
             state.isInitialized = true;
         },
         logout: (state) => {
             state.user = null;
             state.isAuthenticated = false;
-            state.isLoading = false;
             state.isInitialized = true;
         },
-    }
+    },
 });
 
 export const { setCredentials, logout } = authSlice.actions;

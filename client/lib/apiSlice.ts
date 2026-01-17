@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { fetchAuthSession } from "aws-amplify/auth";
 
-const authBaseQuery = fetchBaseQuery({
+const baseQuery = fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
     prepareHeaders: async (headers) => {
         try {
@@ -11,8 +11,8 @@ const authBaseQuery = fetchBaseQuery({
             if (token) {
                 headers.set("Authorization", `Bearer ${token}`);
             }
-        } catch (error) {
-            console.log("Auth Error", error);
+        } catch (err) {
+            console.error("Auth session error", err);
         }
 
         return headers;
@@ -21,22 +21,42 @@ const authBaseQuery = fetchBaseQuery({
 
 export const apiSlice = createApi({
     reducerPath: "api",
-    baseQuery: authBaseQuery,
+    baseQuery,
     tagTypes: ["Tenant", "Manager"],
     endpoints: (builder) => ({
-        getTenant: builder.query({
-            query: (cognitoSub: string) => `/tenants/${cognitoSub}`,
+        getTenantMe: builder.query<unknown, void>({
+            query: () => "/tenants/me",
             providesTags: ["Tenant"],
         }),
 
-        getManager: builder.query({
-            query: (cognitoSub: string) => `/managers/${cognitoSub}`,
+        getManagerMe: builder.query<unknown, void>({
+            query: () => "/managers/me",
             providesTags: ["Manager"],
+        }),
+
+        createTenant: builder.mutation<unknown, { name: string; email: string }>({
+            query: (body) => ({
+                url: "/tenants",
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: ["Tenant"],
+        }),
+
+        createManager: builder.mutation<unknown, { name: string; email: string }>({
+            query: (body) => ({
+                url: "/managers",
+                method: "POST",
+                body,
+            }),
+            invalidatesTags: ["Manager"],
         }),
     }),
 });
 
 export const {
-    useGetTenantQuery,
-    useGetManagerQuery,
+    useLazyGetTenantMeQuery,
+    useLazyGetManagerMeQuery,
+    useCreateTenantMutation,
+    useCreateManagerMutation,
 } = apiSlice;

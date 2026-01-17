@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSignupManagerMutation, useSignupTenantMutation } from "@/lib/publicApiSlice";
+import { useCreateTenantMutation, useCreateManagerMutation } from "@/lib/apiSlice";
 
 export default function VerifyEmailPage() {
     const router = useRouter();
@@ -15,8 +15,8 @@ export default function VerifyEmailPage() {
     const name = searchParams.get("name") || "";
     const role = searchParams.get("role") || "";
     const userId = searchParams.get("userId") || "";
-    const [signupTenant] = useSignupTenantMutation();
-    const [signupManager] = useSignupManagerMutation();
+    const [signupTenant] = useCreateTenantMutation();
+    const [signupManager] = useCreateManagerMutation();
     const [code, setCode] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
