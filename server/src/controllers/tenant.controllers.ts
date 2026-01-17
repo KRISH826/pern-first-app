@@ -1,53 +1,55 @@
 import { Request, Response } from "express";
 import { pgPool } from "../db/db.js";
 
-export const createTenant = async (res: Response, req: Request) => {
+export const createTenant = async (req: Request, res: Response) => {
     try {
-        const { cognito_sub, name, email } = req.body;
-        const existingTenant = await pgPool.query(
-            "SELECT * FROM tenants WHERE cognito_sub = $1",
-            [cognito_sub]
-        )
-        const tenant = await pgPool.query(
-            "INSERT INTO tenants (cognito_sub, name, email) VALUES ($1, $2, $3) RETURNING *",
-            [cognito_sub, name, email]
-        )
-        if (existingTenant.rows.length > 0) {
-            return res.status(409).json({
-                message: "Tenant already exists"
-            })
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized: User information missing" });
         }
-        if (!cognito_sub || !name || !email) {
-            return res.status(400).json({
-                message: "All fields are required",
-            })
-        }
-        return res.status(201).json({
-            message: "Tenant created successfully",
-            data: tenant.rows[0]
-        })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ message: "Internal Server Error" })
-    }
-}
+        const cognito_sub = req.user.id;
+        const { name, email } = req.body;
 
-export const getTenant = async (res: Response, req: Request) => {
+        const existing = await pgPool.query(
+            "SELECT 1 FROM tenants WHERE cognito_sub = $1",
+            [cognito_sub]
+        );
+
+        if (existing.rows.length) {
+            return res.status(409).json({ message: "Tenant already exists" });
+        }
+
+        const result = await pgPool.query(
+            `INSERT INTO tenants (cognito_sub, name, email)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+            [cognito_sub, name, email]
+        );
+
+        return res.status(201).json({ data: result.rows[0] });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+export const getTenant = async (req: Request, res: Response) => {
     try {
-        const { cognito_sub } = req.params;
-        const tenant = await pgPool.query(
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized: User information missing" });
+        }
+        const cognito_sub = req.user.id;
+
+        const result = await pgPool.query(
             "SELECT * FROM tenants WHERE cognito_sub = $1",
             [cognito_sub]
-        )
-        if (!tenant.rows.length) {
-            return res.status(404).json({ message: "Tenant not found" })
+        );
+
+        if (!result.rows.length) {
+            return res.status(404).json({ message: "Tenant not found in DB" });
         }
-        return res.status(200).json({
-            message: "Tenant found",
-            data: tenant.rows[0]
-        })
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ message: "Internal Server Error" })
+
+        return res.status(200).json({ data: result.rows[0] });
+    } catch (err) {
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-}
+};
